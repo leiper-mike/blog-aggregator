@@ -17,7 +17,7 @@ func Read()  (Config, error){
 	if err != nil{
 		return config, fmt.Errorf("error creating path: %v", err)
 	}
-	path = path + "/gatorconfig.json"
+	path = path + "/.gatorconfig.json"
 	data, err := os.ReadFile(path)
 	if err != nil{
 		return config, fmt.Errorf("error reading file: %v", err)
@@ -42,7 +42,7 @@ func (c Config) SetUser(user string) error{
 	if err != nil{
 		return fmt.Errorf("error creating path: %v", err)
 	}
-	path = path + "/gatorconfig.json"
+	path = path + "/.gatorconfig.json"
 	writeError := os.WriteFile(path, data, os.ModePerm)
 	if writeError != nil{
 		return fmt.Errorf("error writing data to file: %v", writeError)
