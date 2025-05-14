@@ -1,10 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"main/internal/commands"
 	"main/internal/config"
+	"main/internal/database"
 	"os"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -12,10 +16,19 @@ func main() {
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
-	var state commands.State = commands.State{Config: &c}
+	db, err := sql.Open("postgres", c.DbUrl)
+	if err != nil{
+		fmt.Printf("%v", err)
+		os.Exit(1)
+	}
+	dbQueries := database.New(db)
+	var state commands.State = commands.State{Db: dbQueries, Config: &c}
 	var coms commands.Commands = commands.Commands{CommandMap: make(map[string]func(*commands.State, commands.Command) error)}
 	coms.Register("login", commands.HandlerLogin)
-
+	coms.Register("register", commands.HandlerRegister)
+	coms.Register("reset", commands.HandlerReset)
+	coms.Register("users", commands.HandlerListUsers)
+	
 	a := os.Args
 	if len(a) < 2 {
 		fmt.Printf("error: no command provided \n")
@@ -28,7 +41,7 @@ func main() {
 		}
 		err := coms.Run(&state, commands.Command{Name: cmdName, Args: args})
 		if err != nil {
-			fmt.Printf("%v", err)
+			fmt.Printf("%v \n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
