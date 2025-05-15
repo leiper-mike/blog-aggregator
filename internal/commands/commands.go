@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"main/internal/config"
 	"main/internal/database"
+	"main/internal/rss"
 	"strings"
 	"time"
 
@@ -81,6 +82,55 @@ func HandlerListUsers(s *State, cmd Command) error{
 	}
 	return nil
 	
+}
+
+func HandlerAgg(s *State, cmd Command) error {
+	feed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil{
+		return err
+	}
+	fmt.Println(feed.Format())
+	for _, item := range feed.Channel.Item{
+		fmt.Println(item.Format())
+	}
+	return nil
+}
+
+func HandlerAddFeed(s *State, cmd Command) error {
+	if len(cmd.Args) < 2 {
+		return fmt.Errorf("error: expected 2 args but recieved %v", len(cmd.Args))
+	}
+	user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
+	if err != nil{
+		return err
+	}
+	feed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID: int32(uuid.New().ID()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name: cmd.Args[0],
+		Url: cmd.Args[1],
+		UserID: user.ID,
+	})
+	if err != nil{
+		return err
+	}
+	fmt.Printf("ID: %v\nCreatedAt: %v\nUpdatedAt: %v\nName: %v\nUrl: %v\nUserId: %v\n", feed.ID,feed.CreatedAt,feed.UpdatedAt,feed.Name,feed.Url,feed.UserID)
+	return nil
+}
+func HandlerListFeeds(s *State, cmd Command) error {
+	feeds, err := s.Db.GetAllFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+	for _, feed := range feeds{
+		user, err := s.Db.GetUserById(context.Background(),feed.UserID)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Feed Name: %v\nFeed URL: %v\nCreated By: %v\n", feed.Name,feed.Url, user.Name)
+	}
+	return nil
 }
 func (c *Commands) Run(s *State, cmd Command) error {
 	if command, ok := c.CommandMap[cmd.Name]; !ok {

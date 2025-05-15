@@ -28,7 +28,9 @@ func main() {
 	coms.Register("register", commands.HandlerRegister)
 	coms.Register("reset", commands.HandlerReset)
 	coms.Register("users", commands.HandlerListUsers)
-	
+	coms.Register("agg", commands.HandlerAgg)
+	coms.Register("addfeed", commands.HandlerAddFeed)
+	coms.Register("feeds", commands.HandlerListFeeds)
 	a := os.Args
 	if len(a) < 2 {
 		fmt.Printf("error: no command provided \n")
