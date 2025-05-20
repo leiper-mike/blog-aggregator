@@ -7,9 +7,7 @@ CREATE TABLE feeds(
      url TEXT  UNIQUE NOT NULL,
      user_id int NOT NULL 
      REFERENCES users
-     ON DELETE CASCADE,
-     FOREIGN KEY(user_id)
-     REFERENCES users(id)
+     ON DELETE CASCADE
 
 );
 -- +goose Down

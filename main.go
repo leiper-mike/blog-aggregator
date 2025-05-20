@@ -31,6 +31,8 @@ func main() {
 	coms.Register("agg", commands.HandlerAgg)
 	coms.Register("addfeed", commands.HandlerAddFeed)
 	coms.Register("feeds", commands.HandlerListFeeds)
+	coms.Register("follow", commands.HandlerFollow)
+	coms.Register("following", commands.HandlerFollowing)
 	a := os.Args
 	if len(a) < 2 {
 		fmt.Printf("error: no command provided \n")

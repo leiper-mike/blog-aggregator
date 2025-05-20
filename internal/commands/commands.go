@@ -116,6 +116,16 @@ func HandlerAddFeed(s *State, cmd Command) error {
 		return err
 	}
 	fmt.Printf("ID: %v\nCreatedAt: %v\nUpdatedAt: %v\nName: %v\nUrl: %v\nUserId: %v\n", feed.ID,feed.CreatedAt,feed.UpdatedAt,feed.Name,feed.Url,feed.UserID)
+	_, err = s.Db.CreateFeedFollow(context.Background(),database.CreateFeedFollowParams{
+		ID: int32(uuid.New().ID()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		FeedID: feed.ID,
+		UserID: user.ID,
+	})
+	if err != nil{
+		return err
+	}
 	return nil
 }
 func HandlerListFeeds(s *State, cmd Command) error {
@@ -129,6 +139,47 @@ func HandlerListFeeds(s *State, cmd Command) error {
 			return err
 		}
 		fmt.Printf("Feed Name: %v\nFeed URL: %v\nCreated By: %v\n", feed.Name,feed.Url, user.Name)
+	}
+	return nil
+}
+func HandlerFollow(s *State, cmd Command) error {
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("error: expected 1 args but recieved 0")
+	}
+	url := cmd.Args[0]
+	user, err := s.Db.GetUser(context.Background(),s.Config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+	feed, err := s.Db.GetFeedByUrl(context.Background(),url)
+	if err != nil{
+		return err
+	}
+	feedFollow, err := s.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID: int32(uuid.New().ID()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		FeedID: feed.ID,
+		UserID: user.ID,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User %v is now following feed '%v'\n", feedFollow.UserName, feedFollow.FeedName)
+	return nil
+}
+func HandlerFollowing(s *State, cmd Command) error {
+	user, err := s.Db.GetUser(context.Background(),s.Config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+	feedFollows, err := s.Db.GetFeedFollowsByUserId(context.Background(), user.ID)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v is following: \n", s.Config.CurrentUserName)
+	for i, feedFollow := range feedFollows{
+		fmt.Printf("%v: %v\n",i,feedFollow.FeedName)
 	}
 	return nil
 }
