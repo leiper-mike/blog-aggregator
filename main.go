@@ -29,10 +29,11 @@ func main() {
 	coms.Register("reset", commands.HandlerReset)
 	coms.Register("users", commands.HandlerListUsers)
 	coms.Register("agg", commands.HandlerAgg)
-	coms.Register("addfeed", commands.HandlerAddFeed)
+	coms.Register("addfeed", commands.MiddlewareLoggedIn(commands.HandlerAddFeed))
 	coms.Register("feeds", commands.HandlerListFeeds)
-	coms.Register("follow", commands.HandlerFollow)
-	coms.Register("following", commands.HandlerFollowing)
+	coms.Register("follow", commands.MiddlewareLoggedIn(commands.HandlerFollow))
+	coms.Register("following", commands.MiddlewareLoggedIn(commands.HandlerFollowing))
+	coms.Register("unfollow", commands.MiddlewareLoggedIn(commands.HandlerUnfollow))
 	a := os.Args
 	if len(a) < 2 {
 		fmt.Printf("error: no command provided \n")

@@ -96,13 +96,9 @@ func HandlerAgg(s *State, cmd Command) error {
 	return nil
 }
 
-func HandlerAddFeed(s *State, cmd Command) error {
+func HandlerAddFeed(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) < 2 {
 		return fmt.Errorf("error: expected 2 args but recieved %v", len(cmd.Args))
-	}
-	user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
-	if err != nil{
-		return err
 	}
 	feed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID: int32(uuid.New().ID()),
@@ -142,15 +138,11 @@ func HandlerListFeeds(s *State, cmd Command) error {
 	}
 	return nil
 }
-func HandlerFollow(s *State, cmd Command) error {
+func HandlerFollow(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) == 0 {
 		return fmt.Errorf("error: expected 1 args but recieved 0")
 	}
 	url := cmd.Args[0]
-	user, err := s.Db.GetUser(context.Background(),s.Config.CurrentUserName)
-	if err != nil {
-		return err
-	}
 	feed, err := s.Db.GetFeedByUrl(context.Background(),url)
 	if err != nil{
 		return err
@@ -168,11 +160,7 @@ func HandlerFollow(s *State, cmd Command) error {
 	fmt.Printf("User %v is now following feed '%v'\n", feedFollow.UserName, feedFollow.FeedName)
 	return nil
 }
-func HandlerFollowing(s *State, cmd Command) error {
-	user, err := s.Db.GetUser(context.Background(),s.Config.CurrentUserName)
-	if err != nil {
-		return err
-	}
+func HandlerFollowing(s *State, cmd Command, user database.User) error {
 	feedFollows, err := s.Db.GetFeedFollowsByUserId(context.Background(), user.ID)
 	if err != nil {
 		return err
@@ -183,6 +171,25 @@ func HandlerFollowing(s *State, cmd Command) error {
 	}
 	return nil
 }
+func HandlerUnfollow(s *State, cmd Command, user database.User) error {
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("error: expected 1 args but recieved 0")
+	}
+	url := cmd.Args[0]
+	feed, err := s.Db.GetFeedByUrl(context.Background(),url)
+	if err != nil{
+		return err
+	}
+	err = s.Db.DeleteFeedFollow(context.Background(), database.DeleteFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	})
+	if err != nil{
+		return err
+	}
+	fmt.Printf("%v unfollowed feed %v with url: %v", user.Name, feed.Name, feed.Url)
+	return err
+}
 func (c *Commands) Run(s *State, cmd Command) error {
 	if command, ok := c.CommandMap[cmd.Name]; !ok {
 		return fmt.Errorf("error: no command with name `%v` found in commands", cmd.Name)
@@ -191,6 +198,16 @@ func (c *Commands) Run(s *State, cmd Command) error {
 		return err
 	}
 
+}
+func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) error) func(*State, Command) error{
+	return func(s *State, cmd Command) error {
+		user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
+		if err != nil {
+			return err
+		}
+
+		return handler(s, cmd, user)
+	}
 }
 func (c *Commands) Register(name string, f func(*State, Command) error) {
 	c.CommandMap[name] = f
