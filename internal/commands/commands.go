@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"main/internal/config"
 	"main/internal/database"
@@ -85,15 +86,35 @@ func HandlerListUsers(s *State, cmd Command) error{
 }
 
 func HandlerAgg(s *State, cmd Command) error {
-	feed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("error: expected 1 args but recieved 0")
+	}
+	dur := cmd.Args[0]
+	interval, err := time.ParseDuration(dur)
 	if err != nil{
 		return err
 	}
-	fmt.Println(feed.Format())
-	for _, item := range feed.Channel.Item{
-		fmt.Println(item.Format())
+	oneS, _ := time.ParseDuration("1s")
+	if interval < oneS{
+		return fmt.Errorf("error: interval cannot be less than one second")
 	}
-	return nil
+	fmt.Println("Collecting feeds every " + interval.String())
+	ticker := time.NewTicker(interval)
+	for ; ; <-ticker.C {
+		dbFeed, err := scrapeFeeds(s)
+		if err != nil{
+			return err
+		}
+		url := dbFeed.Url
+		feed, err := rss.FetchFeed(context.Background(), url)
+		if err != nil{
+			return err
+		}
+		fmt.Println(feed.Format())
+		for _, item := range feed.Channel.Item{
+			fmt.Println(item.Format())
+		}
+	}
 }
 
 func HandlerAddFeed(s *State, cmd Command, user database.User) error {
@@ -190,6 +211,17 @@ func HandlerUnfollow(s *State, cmd Command, user database.User) error {
 	fmt.Printf("%v unfollowed feed %v with url: %v", user.Name, feed.Name, feed.Url)
 	return err
 }
+func scrapeFeeds(s *State) (database.Feed, error){
+	feed, err := s.Db.GetNextFeedToFetch(context.Background())
+	if err != nil{
+		return feed, err
+	}
+	err = s.Db.MarkFeedFetched(context.Background(), database.MarkFeedFetchedParams{
+		ID: feed.ID,
+		LastFetchedAt: sql.NullTime{Time: time.Now(), Valid: true},
+	})
+	return feed, err
+}
 func (c *Commands) Run(s *State, cmd Command) error {
 	if command, ok := c.CommandMap[cmd.Name]; !ok {
 		return fmt.Errorf("error: no command with name `%v` found in commands", cmd.Name)
@@ -198,7 +230,7 @@ func (c *Commands) Run(s *State, cmd Command) error {
 		return err
 	}
 
-}
+} 
 func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) error) func(*State, Command) error{
 	return func(s *State, cmd Command) error {
 		user, err := s.Db.GetUser(context.Background(), s.Config.CurrentUserName)
