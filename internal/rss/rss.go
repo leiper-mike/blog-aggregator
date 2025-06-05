@@ -67,8 +67,8 @@ func (item *RSSItem) decodeText(){
 	item.Title = html.UnescapeString(item.Title)
 }
 func (item RSSItem) Format() string{
-	return fmt.Sprintf("Title: %v \nLink: %v \nPublished: %v \nDescription: %v", item.Title, item.Link, item.PubDate, item.Description)
+	return fmt.Sprintf("Post Title: %v \nLink: %v \nPublished: %v \nDescription: %v", item.Title, item.Link, item.PubDate, item.Description)
 }
 func (feed RSSFeed) Format() string{
-	return fmt.Sprintf("Title: %v \nLink: %v \nDescription: %v", feed.Channel.Title, feed.Channel.Link, feed.Channel.Description)
+	return fmt.Sprintf("Feed Title: %v \nLink: %v \nDescription: %v", feed.Channel.Title, feed.Channel.Link, feed.Channel.Description)
 }

@@ -34,6 +34,7 @@ func main() {
 	coms.Register("follow", commands.MiddlewareLoggedIn(commands.HandlerFollow))
 	coms.Register("following", commands.MiddlewareLoggedIn(commands.HandlerFollowing))
 	coms.Register("unfollow", commands.MiddlewareLoggedIn(commands.HandlerUnfollow))
+	coms.Register("browse", commands.MiddlewareLoggedIn(commands.HandlerBrowse))
 	a := os.Args
 	if len(a) < 2 {
 		fmt.Printf("error: no command provided \n")

@@ -24,3 +24,7 @@ select *
 from feeds
 order by last_fetched_at ASC NULLS FIRST
 LIMIT 1;
+-- name: GetFeedByID :one
+SELECT * 
+FROM feeds
+WHERE id = $1;
